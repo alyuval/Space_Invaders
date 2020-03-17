@@ -2,6 +2,7 @@
 
 # Space Invaders
 # Created by Lee Robinson
+import base64
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -197,7 +198,7 @@ class SpaceInvaders(object):
         self.score += score
         if self.score > 2550:
             self.score %= 2550
-            bug_reporter.report_bug("Buffer overflow", "Did you really think you can get to 3000 points?")
+            bug_reporter.report_bug("Integer overflow", "Did you really think you can get to 3000 points?")
         return score
 
     def create_main_menu(self):
@@ -394,11 +395,16 @@ class SpaceInvaders(object):
         if not self.recordsPath.exists():
             return []
         with self.recordsPath.open("rb") as f:
-            records = f.readlines()
+            records_buffer = f.read()
+        records = [records_buffer[i:i+8] for i in range(0, len(records_buffer), 8)]
         parsed_records = []
         for record in records:
-            time_since_epoc, score = struct.unpack("II", record[:-1])
-            parsed_records.append(SpaceInvaders.Record(EPOCH + timedelta(seconds=time_since_epoc), score))
+            try:
+                time_since_epoc, score = struct.unpack("II", record)
+                parsed_records.append(SpaceInvaders.Record(EPOCH + timedelta(seconds=time_since_epoc), score))
+            except Exception:
+                bug_reporter.report_bug("Cheater alert", "Are you trying to change the records file?")
+
         return parsed_records
 
     def add_to_records(self, score):
@@ -421,9 +427,7 @@ class SpaceInvaders(object):
                     time_since_epoc = time_since_epoc % max_int
                     if time_since_epoc < 0:
                         time_since_epoc += max_int
-
                 output.write(struct.pack("II", time_since_epoc, record.score))
-                output.write(b"\n")
 
 
 if __name__ == '__main__':
