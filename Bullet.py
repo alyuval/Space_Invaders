@@ -14,4 +14,6 @@ class Bullet(sprite.Sprite):
 
     def update(self, keys, *args):
         SCREEN.blit(self.image, self.rect)
-        self.rect.y += self.speed * self.direction
+        if self.rect.y >= -100:
+            self.rect.y += self.speed * self.direction
+        
